@@ -1,5 +1,7 @@
-import { JSX, Component, createSignal, createEffect } from "solid-js";
+import { JSX, Component, createSignal, createEffect, createContext } from "solid-js";
 import { jsPDF as PDF } from "jspdf";
+
+import Toolbar from "./Toolbar";
 
 type Task = {
   title: string;
@@ -32,15 +34,33 @@ const TaskItem: Component<TaskItemProps> = (props) => {
 
 const Title: Component<{ title: string; setTitle(_: string): void }> = (props) => {
   return (
-    <>
-      <p contentEditable={true} class="outline-none border-none">
-        {props.title}
-      </p>
-    </>
+    <input
+      value={props.title}
+      onchange={(e) => props.setTitle(e.currentTarget.value)}
+      class="bg-transparent text-center outline-none"
+    />
   );
 };
 
+export type Assignment = {
+  title: string;
+};
+
+export type CursorAt = {
+  selected?: false;
+};
+
+export type CursorSelected = {
+  selected: true;
+  lineEnd: number;
+  columnEnd: number;
+};
+
+export type Cursor = { line: number; column: number } & (CursorAt | CursorSelected);
+
 const App: Component = () => {
+  const [cursor, setCursor] = createSignal<Cursor | null>(null);
+
   const [title, setTitle] = createSignal("Opgavesæt");
   const [tasks, setTasks] = createSignal<Task[]>([
     {
@@ -113,8 +133,14 @@ const App: Component = () => {
         <nav class="w-full h-12 bg-[#002B59] flex items-center justify-center text-white">
           <Title title={title()} setTitle={setTitle} />
         </nav>
-        <div class="w-full h-16 bg-white flex justify-end px-12">
-          <button onclick={handleDownload}>Download</button>
+        <div class="w-full h-16 bg-white grid grid-cols-[1fr_auto] px-12 items-center">
+          <Toolbar />
+          <button
+            onclick={handleDownload}
+            class="h-11 bg-blue-500 px-3 rounded-xl text-white font-medium"
+          >
+            Download
+          </button>
         </div>
       </header>
       <main class="px-36 flex items-center flex-col">
