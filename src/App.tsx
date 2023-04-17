@@ -3,17 +3,10 @@ import { jsPDF as PDF } from "jspdf";
 
 import Toolbar from "./Toolbar";
 
-// https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-function shuffleArray<T>(array: T[]) {
-  for (var i = array.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var temp = array[i];
-    array[i] = array[j];
-    array[j] = temp;
-  }
-}
+import { generateDocument, generateQuestion } from "./assignment";
+import Icon from "./Icon";
 
-type Task = {
+export type Task = {
   title: string;
   body: string;
   questions: string[];
@@ -44,9 +37,10 @@ const TaskItem: Component<TaskItemProps> = (props) => {
   };
 
   const handleQuestionChange = (i: number) => {
-    const f: JSX.EventHandler<HTMLInputElement, Event> = (e) => {
+    const f: JSX.EventHandler<HTMLTextAreaElement, Event> = (e) => {
       let questions = props.task.questions;
       questions[i] = e.currentTarget.value;
+
       props.updateTask({ ...props.task, questions });
     };
 
@@ -64,11 +58,10 @@ const TaskItem: Component<TaskItemProps> = (props) => {
       <ol class="flex flex-col gap-2 pb-2">
         {props.task.questions.map((question, i) => (
           <li>
-            <input
-              type="text"
+            <textarea
               value={question}
               onchange={handleQuestionChange(i)}
-              class="w-full border p-2"
+              class="w-full border p-2 min-h-fit"
             />
           </li>
         ))}
@@ -82,16 +75,20 @@ const TaskItem: Component<TaskItemProps> = (props) => {
 
 const Title: Component<{ title: string; setTitle(_: string): void }> = (props) => {
   return (
-    <input
-      value={props.title}
-      onchange={(e) => props.setTitle(e.currentTarget.value)}
-      class="bg-transparent text-center outline-none"
-    />
+    <div class="flex items-center">
+      <input
+        value={props.title}
+        onchange={(e) => props.setTitle(e.currentTarget.value)}
+        class="bg-transparent text-center outline-none"
+      />
+      <Icon name="edit" class="!text-lg" />
+    </div>
   );
 };
 
 export type Assignment = {
   title: string;
+  tasks: Task[];
 };
 
 export type CursorAt = {
@@ -109,6 +106,9 @@ export type Cursor = { line: number; column: number } & (CursorAt | CursorSelect
 const App: Component = () => {
   const [cursor, setCursor] = createSignal<Cursor | null>(null);
   const [generate, setGenerate] = createSignal<number>(1);
+  const [shuffle, setShuffle] = createSignal(false);
+
+  generateQuestion("hello \\[NZQR-5..5]\\ \\[NZ2..10]\\ \\[1,2,3,4]\\");
 
   const [title, setTitle] = createSignal("Opgavesæt");
   const [tasks, setTasks] = createSignal<Task[]>([
@@ -116,65 +116,50 @@ const App: Component = () => {
       title: "Opgave 1",
       body: "I disse opgave skal du anvende viden om ligninger til at løse ligninger samt redegøre for måden derpå",
       questions: [
-        "A) Løs følgende: \\[N100..500]\\x + 2 = 5",
+        "A) Løs følgende: \\[100..500]\\x + 2 = 5",
         "B) Redegør for måden du løste delspørgsmål `A` på",
+      ],
+    },
+    {
+      title: "Question 2",
+      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
+      questions: [
+        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
+        "B) Redegør for måden du løste delspørgsmål `A` på",
+        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
+      ],
+    },
+    {
+      title: "Question 3",
+      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
+      questions: [
+        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
+        "B) Redegør for måden du løste delspørgsmål `A` på",
+        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
+      ],
+    },
+    {
+      title: "Question 4",
+      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
+      questions: [
+        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
+        "B) Redegør for måden du løste delspørgsmål `A` på",
+        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
+      ],
+    },
+    {
+      title: "Question 5",
+      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
+      questions: [
+        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
+        "B) Redegør for måden du løste delspørgsmål `A` på",
+        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
       ],
     },
   ]);
 
   const handleDownload = () => {
-    for (let i = 0; i < generate(); i++) {
-      const document = new PDF();
-      const { getWidth, getHeight } = document.internal.pageSize;
-      const [marginX, marginY] = [25, 25];
-
-      // Front Page
-      document.setFontSize(32).text(title(), getWidth() / 2, 64, { align: "center" });
-
-      let randomTasks = [...tasks()];
-      shuffleArray(randomTasks);
-      console.log(randomTasks);
-
-      for (const task of randomTasks) {
-        document.addPage();
-        document.setFontSize(24).text(task.title, marginX, marginY + 0);
-
-        document.setFontSize(12).text(task.body, marginX, marginY + 12);
-
-        for (let i = 0; i < task.questions.length; i++) {
-          const question = task.questions[i];
-
-          //
-          if (question.includes("\\[") && question.includes("]\\")) {
-            // Parses \\[N5..123]
-            const startExpression = question.indexOf("\\[");
-            const endExpression = question.lastIndexOf("]\\");
-            const expression = question.slice(startExpression + "\\[".length, endExpression);
-            // only natural numbers
-            if (expression.startsWith("N")) {
-              const startRange = expression.indexOf("..");
-              const endRange = startRange + "..".length;
-              Number.parseInt(expression.slice(1, startRange));
-
-              const min = Number.parseInt(expression.slice(1, startRange));
-              const max = Number.parseInt(expression.slice(endRange));
-
-              const number = Math.round(Math.random() * (max - min) + min);
-              const generatedQuestion = question
-                .slice(0, startExpression)
-                .concat(`${number}`)
-                .concat(question.slice(endExpression + "]\\".length));
-
-              document.text(generatedQuestion, marginX, marginY + 24 + 12 * i);
-            }
-          } else {
-            document.text(question, marginX + 0, marginY + 24 + 12 * i);
-          }
-        }
-      }
-
-      document.save(`${i + 1}`);
-    }
+    generateDocument({ title: title(), tasks: tasks() }, { shuffle: true }).save(title());
   };
 
   const handleCreateTask = () => {
@@ -199,8 +184,19 @@ const App: Component = () => {
               min={1}
               value={generate()}
               onchange={(e) => setGenerate(Number.parseInt(e.currentTarget.value))}
-              class="w-12 h-10 border rounded text-center rounded-xl"
+              class="w-12 h-10 border text-center rounded-xl"
             />
+            <button
+              onclick={() => setShuffle((prev) => !prev)}
+              class={
+                "w-12 h-10 items-center justify-center flex rounded-xl border " +
+                (!shuffle()
+                  ? " border-neutral-400 text-neutral-400"
+                  : "border-blue-500 text-blue-500 border-2")
+              }
+            >
+              <Icon name={shuffle() ? "shuffle_on" : "shuffle"} />
+            </button>
             <button
               onclick={handleDownload}
               class="h-11 bg-blue-500 px-3 rounded-xl text-white font-medium"
