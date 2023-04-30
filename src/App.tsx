@@ -1,10 +1,11 @@
-import { JSX, Component, createSignal, createEffect, createContext } from "solid-js";
+import { JSX, Component, createSignal, createEffect, createContext, Show } from "solid-js";
 import { jsPDF as PDF } from "jspdf";
 
 import Toolbar from "./Toolbar";
 
 import { generateDocument, generateQuestion } from "./assignment";
 import Icon from "./Icon";
+import { Portal } from "solid-js/web";
 
 export type Task = {
   title: string;
@@ -14,6 +15,7 @@ export type Task = {
 
 type TaskItemProps = {
   task: Task;
+  deleteTask: () => void;
   updateTask: (task: Task) => void;
 };
 
@@ -47,8 +49,22 @@ const TaskItem: Component<TaskItemProps> = (props) => {
     return f;
   };
 
+  const handleDeleteQuestion = (i: number) => {
+    const f: JSX.EventHandler<HTMLButtonElement, MouseEvent> = (e) => {
+      let questions = props.task.questions;
+      questions.splice(i, 1);
+
+      props.updateTask({ ...props.task, questions });
+    };
+
+    return f;
+  };
+
   return (
-    <li class="bg-white rounded-xl px-6 py-8 w-full">
+    <li class="relative bg-white rounded-xl px-6 py-8 w-full">
+      <button onclick={() => props.deleteTask()} class="absolute right-6 top-6 text-neutral-600">
+        <Icon name="delete" />
+      </button>
       <input
         value={props.task.title}
         onchange={handleTitleChange}
@@ -57,12 +73,18 @@ const TaskItem: Component<TaskItemProps> = (props) => {
       <textarea value={props.task.body} onchange={handleBodyChange} class="w-full border p-2" />
       <ol class="flex flex-col gap-2 pb-2">
         {props.task.questions.map((question, i) => (
-          <li>
+          <li class="flex items-center">
             <textarea
               value={question}
               onchange={handleQuestionChange(i)}
               class="w-full border p-2 min-h-fit"
             />
+            <button
+              class="w-10 h-10 flex items-center justify-center text-red-500"
+              onclick={handleDeleteQuestion(i)}
+            >
+              <Icon name="delete" />
+            </button>
           </li>
         ))}
       </ol>
@@ -75,7 +97,7 @@ const TaskItem: Component<TaskItemProps> = (props) => {
 
 const Title: Component<{ title: string; setTitle(_: string): void }> = (props) => {
   return (
-    <div class="flex items-center">
+    <div class="col-start-2 col-span-1 justify-self-center flex items-center">
       <input
         value={props.title}
         onchange={(e) => props.setTitle(e.currentTarget.value)}
@@ -91,24 +113,11 @@ export type Assignment = {
   tasks: Task[];
 };
 
-export type CursorAt = {
-  selected?: false;
-};
-
-export type CursorSelected = {
-  selected: true;
-  lineEnd: number;
-  columnEnd: number;
-};
-
-export type Cursor = { line: number; column: number } & (CursorAt | CursorSelected);
-
 const App: Component = () => {
-  const [cursor, setCursor] = createSignal<Cursor | null>(null);
+  const [showHelp, setShowHelp] = createSignal(false);
+
   const [generate, setGenerate] = createSignal<number>(1);
   const [shuffle, setShuffle] = createSignal(false);
-
-  generateQuestion("hello \\[NZQR-5..5]\\ \\[NZ2..10]\\ \\[1,2,3,4]\\");
 
   const [title, setTitle] = createSignal("Opgavesæt");
   const [tasks, setTasks] = createSignal<Task[]>([
@@ -118,42 +127,6 @@ const App: Component = () => {
       questions: [
         "A) Løs følgende: \\[100..500]\\x + 2 = 5",
         "B) Redegør for måden du løste delspørgsmål `A` på",
-      ],
-    },
-    {
-      title: "Question 2",
-      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
-      questions: [
-        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
-        "B) Redegør for måden du løste delspørgsmål `A` på",
-        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
-      ],
-    },
-    {
-      title: "Question 3",
-      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
-      questions: [
-        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
-        "B) Redegør for måden du løste delspørgsmål `A` på",
-        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
-      ],
-    },
-    {
-      title: "Question 4",
-      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
-      questions: [
-        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
-        "B) Redegør for måden du løste delspørgsmål `A` på",
-        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
-      ],
-    },
-    {
-      title: "Question 5",
-      body: "I denne opgave skal du anvende og redegøre for forskellige typer af regression.",
-      questions: [
-        "A) Løs følgende: \\[NZ100..500]\\x + 2 = 5",
-        "B) Redegør for måden du løste delspørgsmål `A` på",
-        "C) Yeeet \\[NZQR-50..50]\\ + \\[10,20,30,40,50]\\ test",
       ],
     },
   ]);
@@ -171,12 +144,45 @@ const App: Component = () => {
   };
 
   return (
-    <div class="bg-[#D9D9D9] min-h-screen overflow-x-hidden pb-8">
+    <div class="bg-[#D9D9D9] min-h-screen pb-8 relative">
       <header class="w-screen drop-shadow sticky top-0 left-0">
-        <nav class="w-full h-12 bg-[#002B59] flex items-center justify-center text-white">
+        <nav class="w-full h-12 bg-[#002B59] grid grid-cols-3 items-center justify-center text-white">
           <Title title={title()} setTitle={setTitle} />
+          <div class="col-start-3 col-span-1 w-full h-full flex items-center justify-end px-12">
+            <button
+              onclick={() => setShowHelp(true)}
+              class="inline-flex items-center justify-center justify-self-end"
+            >
+              <Icon name="help" />
+            </button>
+          </div>
+          <Show when={showHelp()}>
+            <Portal>
+              <div
+                class="absolute w-full h-full top-0 bg-black/40 flex justify-center py-8"
+                onclick={() => setShowHelp(false)}
+              >
+                <div
+                  class="bg-white rounded px-12 py-12 drop-shadow-md w-8/12"
+                  onclick={(e) => e.stopPropagation()}
+                >
+                  <div class="absolute top-6 w-full right-8 flex justify-end">
+                    <button onclick={() => setShowHelp(false)} class="">
+                      <Icon name="close" class="!text-4xl" />
+                    </button>
+                  </div>
+                  <h1 class="text-4xl font-semibold">Hjælp</h1>
+                  <h2 class="text-2xl font-semibold">Guide</h2>
+                  <p>// TODO VIDEO</p>
+                  <h2 class="text-2xl font-semibold">Kommandoer</h2>
+                  <ul></ul>
+                  <h2 class="text-2xl font-semibold">Eksempler</h2>
+                </div>
+              </div>
+            </Portal>
+          </Show>
         </nav>
-        <div class="w-full h-16 bg-white grid grid-cols-[1fr_auto] px-12 items-center">
+        <div class="w-full h-16 bg-white grid grid-cols-[1fr_auto] pr-12 pl-6 items-center">
           <Toolbar />
           <div class="flex items-center gap-2">
             <input
@@ -218,6 +224,7 @@ const App: Component = () => {
                   ...prevTasks.slice(i + 1),
                 ]);
               }}
+              deleteTask={() => setTasks((prev) => [...prev.slice(0, i), ...prev.slice(i + 1)])}
             />
           ))}
         </ul>

@@ -1,5 +1,7 @@
 import { Component } from "solid-js";
 
+import Icon from "./Icon";
+
 const FONTS = ["Times New Roman", "Roboto"];
 
 export type ToolbarState = {
@@ -17,9 +19,16 @@ export type ToolbarProps = {
 
 const Toolbar: Component = () => {
   return (
-    <ul class="flex flex-row">
-      <li>Back</li>
-      <li>Forward</li>
+    <ul class="flex flex-row items-center gap-2">
+      <li class="flex text-neutral-600">
+        <button class="w-6 h-10 flex items-center justify-center">
+          <Icon name="undo" />
+        </button>
+        <button class="w-6 h-10 flex items-center justify-center">
+          <Icon name="redo" />
+        </button>
+      </li>
+      <li class="h-5 w-[2px] bg-neutral-400"></li>
       <li>
         <select class="bg-slate-200 rounded-md">
           {FONTS.map((font) => (
