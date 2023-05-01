@@ -1,11 +1,12 @@
-import { JSX, Component, createSignal, createEffect, createContext, Show } from "solid-js";
-import { jsPDF as PDF } from "jspdf";
+import { JSX, Component, createSignal, Show, Setter } from "solid-js";
+import { Portal } from "solid-js/web";
+
+import { generateDocument } from "./assignment";
 
 import Toolbar from "./Toolbar";
-
-import { generateDocument, generateQuestion } from "./assignment";
 import Icon from "./Icon";
-import { Portal } from "solid-js/web";
+
+import imgUrl from "./generering.png";
 
 export type Task = {
   title: string;
@@ -114,7 +115,7 @@ export type Assignment = {
 };
 
 const App: Component = () => {
-  const [showHelp, setShowHelp] = createSignal(false);
+  const [showHelp, setShowHelp] = createSignal(true);
 
   const [generate, setGenerate] = createSignal<number>(1);
   const [shuffle, setShuffle] = createSignal(false);
@@ -145,7 +146,7 @@ const App: Component = () => {
 
   return (
     <div class="bg-[#D9D9D9] min-h-screen pb-8 relative">
-      <header class="w-screen drop-shadow sticky top-0 left-0">
+      <header class="w-screen drop-shadow-md sticky top-0 left-0 z-10">
         <nav class="w-full h-12 bg-[#002B59] grid grid-cols-3 items-center justify-center text-white">
           <Title title={title()} setTitle={setTitle} />
           <div class="col-start-3 col-span-1 w-full h-full flex items-center justify-end px-12">
@@ -157,29 +158,7 @@ const App: Component = () => {
             </button>
           </div>
           <Show when={showHelp()}>
-            <Portal>
-              <div
-                class="absolute w-full h-full top-0 bg-black/40 flex justify-center py-8"
-                onclick={() => setShowHelp(false)}
-              >
-                <div
-                  class="bg-white rounded px-12 py-12 drop-shadow-md w-8/12"
-                  onclick={(e) => e.stopPropagation()}
-                >
-                  <div class="absolute top-6 w-full right-8 flex justify-end">
-                    <button onclick={() => setShowHelp(false)} class="">
-                      <Icon name="close" class="!text-4xl" />
-                    </button>
-                  </div>
-                  <h1 class="text-4xl font-semibold">Hjælp</h1>
-                  <h2 class="text-2xl font-semibold">Guide</h2>
-                  <p>// TODO VIDEO</p>
-                  <h2 class="text-2xl font-semibold">Kommandoer</h2>
-                  <ul></ul>
-                  <h2 class="text-2xl font-semibold">Eksempler</h2>
-                </div>
-              </div>
-            </Portal>
+            <HelpModal setShowHelp={setShowHelp} />
           </Show>
         </nav>
         <div class="w-full h-16 bg-white grid grid-cols-[1fr_auto] pr-12 pl-6 items-center">
@@ -240,3 +219,98 @@ const App: Component = () => {
 };
 
 export default App;
+
+const HelpModal: Component<{ setShowHelp: Setter<boolean> }> = (props) => {
+  return (
+    <Portal>
+      <div
+        class="absolute w-full h-full top-0 bg-black/40 py-8 z-20"
+        onclick={() => props.setShowHelp(false)}
+      >
+        <div
+          class="bg-white relative left-1/2 top-16 -translate-x-1/2 rounded px-12 py-12 drop-shadow-md w-8/12 h-[80vh] overflow-y-scroll"
+          onclick={(e) => e.stopPropagation()}
+        >
+          <div class="absolute top-6 w-full right-8 flex justify-end">
+            <button onclick={() => props.setShowHelp(false)} class="">
+              <Icon name="close" class="!text-4xl" />
+            </button>
+          </div>
+          <h1 class="text-4xl font-semibold">Hjælp</h1>
+          <p>
+            På denne side findes en guide samt hjælp til hvordan man bruger programmet til at
+            generere tests.
+          </p>
+          <h2 class="text-2xl font-semibold my-2">Guide</h2>
+          <p>// TODO VIDEO</p>
+          <h2 class="text-2xl font-semibold my-2">Kommandoer</h2>
+          <p>Lige nu findes der to typer af kommandoer man kan bruge:</p>
+          <ul class="">
+            <ol class="list-disc list-item list-inside">\[N0..5]\</ol>
+            <ol class="list-disc list-item list-inside">\[1,2,3,4,5]\</ol>
+          </ul>
+          <p class="mt-2">
+            Den første type er en række-generering, hvor man kan generere et valgfrit tal mellem et
+            start og et slut tal. Den er opbygget således at man starter med at give den 1 eller
+            flere talmængder i en række af karakterer efter hinanden. <b>Eksempelvis NZQ</b>.
+            Programmet vil udelukkende generere tal som er indenfor de talmængder.
+            <br />
+            Derefter specificerer man rækken af tal man vil generere, hvor man giver den minimums
+            tallet efterfulgt af "<b>..</b>", hvorefter man giver den maksimums tallet. <br />
+            Intervallet man giver er inklusivt, den vil altså generere til og med de tal man
+            specificerer.
+          </p>
+          <h3 class="mt-4 text-lg font-medium">Talmængder</h3>
+          <ul class="">
+            <li class="list-item list-inside list-disc">
+              <b>N</b> betyder at den kun genererer positive heltal.{" "}
+            </li>
+            <li class="list-item list-inside list-disc">
+              <b>Z</b> betyder at den kun genererer negative heltal.
+            </li>
+            <li class="list-item list-inside list-disc">
+              <b>Q</b> betyder at den kan genere positive eller negative decimaltal.
+            </li>
+          </ul>
+          <p class="mt-2">
+            <b>
+              Man kan også kombinere flere talmængder sammen så man kan generere flere tilfældige
+              tal. F.eks. NZ eller QZ, hvor NZ betyder positive eller negative heltal samt QZ som
+              betyder negative heltal eller decimaltal.
+            </b>
+          </p>
+          <p class="text-red-500 font-semibold mt-2">
+            Det er en fejl at give en negativ række af tal og kun specificere N-talmængden. F.eks.
+            vil \\[N-5..-2]\\ resultere i en fejl.
+          </p>
+          <p>
+            Den anden type af kommando er en liste af tal eller andre tegn. Man specificerer en
+            liste som er separaret med "<b>,</b>". Følgende er eksempler på denne type kommando:
+            <br />
+            \\[1,2,3,4,5]\\
+            <br />
+            \\[-1, 1/3, 4.2]\\
+            <span class="text-yellow-500 font-semibold">
+              <br></br>
+              Husk at alle tal skrives med engelsk notation, altså man skal ikke bruge komma, men
+              punktum som decimalseparator.
+            </span>
+          </p>
+          <h2 class="text-2xl font-semibold my-2">Generering</h2>
+          Når du har lavet testen færdig skal du finde ud af hvor mange testsæt som skal genereres.
+          <div class="w-full flex justify-center mt-4">
+            <img src={imgUrl} />
+          </div>
+          <p>
+            Oppe i højre hjørne kan man finde de 3 ovenstående knapper. Den første bruges til at
+            indskrive antallet af sæt man vil generere. <b>Den 2. knap</b> er en måde at omrokere
+            opgaverne, så opgaver kommer i forskellig rækkefølge i de forskellige sæt.{" "}
+            <b>Den 3. knap</b> genererer sættene og downloader det specificerede antal sæt ned til
+            din computer.
+          </p>
+          <h2 class="text-2xl font-semibold my-2">Eksempler</h2>
+        </div>
+      </div>
+    </Portal>
+  );
+};

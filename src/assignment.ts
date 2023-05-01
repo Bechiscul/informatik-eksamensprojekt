@@ -224,6 +224,10 @@ const randomValueFromRange = (
   } else if (n && z) {
     // Generate a random whole number than can be negative or positive.
     return CHANCE.integer({ min, max });
+  } else if (n && !z) {
+    // Generate a random whole number that can only be positive.
+    if (range[0] < 0 || range[1]) throw new Error("Only natural numbers");
+    return CHANCE.integer({ min, max });
   }
 
   throw new Error("Unchecked");
