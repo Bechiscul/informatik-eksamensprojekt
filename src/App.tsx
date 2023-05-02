@@ -133,7 +133,9 @@ const App: Component = () => {
   ]);
 
   const handleDownload = () => {
-    generateDocument({ title: title(), tasks: tasks() }, { shuffle: true }).save(title());
+    for (let i = 0; i < generate(); i++) {
+      generateDocument({ title: title(), tasks: tasks() }, { shuffle: true }).save(title());
+    }
   };
 
   const handleCreateTask = () => {
