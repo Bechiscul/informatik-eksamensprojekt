@@ -7,6 +7,7 @@ import Toolbar from "./Toolbar";
 import Icon from "./Icon";
 
 import imgUrl from "./generering.png";
+import videoUrl from "./guide.mp4";
 
 export type Task = {
   title: string;
@@ -244,7 +245,7 @@ const HelpModal: Component<{ setShowHelp: Setter<boolean> }> = (props) => {
             generere tests.
           </p>
           <h2 class="text-2xl font-semibold my-2">Guide</h2>
-          <p>// TODO VIDEO</p>
+          <video src={videoUrl} controls></video>
           <h2 class="text-2xl font-semibold my-2">Kommandoer</h2>
           <p>Lige nu findes der to typer af kommandoer man kan bruge:</p>
           <ul class="">
